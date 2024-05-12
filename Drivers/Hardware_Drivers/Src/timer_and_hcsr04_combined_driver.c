@@ -81,7 +81,7 @@ void TIM7_IRQHandler(void) {
 			HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET);
 
 			// START ECHO MODE
-			basic_timer_set_delay_time_in_us(60000); // wait for the echo and repeat the reading processes in each x us.
+			basic_timer_set_delay_time_in_us(MEASURING_FREQ_IN_US); // wait for the echo and repeat the reading processes in each x us.
 			basic_timer_reset();
 			timer_trig_mode = 0;
 			send_sensor_data_to_uart(); // send the data while waiting for the next loop

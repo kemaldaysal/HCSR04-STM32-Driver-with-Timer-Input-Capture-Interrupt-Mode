@@ -16,6 +16,8 @@
 
 #include "uart_driver.h"
 
+#define MEASURING_FREQ_IN_US ((uint16_t) 60000) // max is 65536 (2^16) for now
+
 #define TRIG_PIN GPIO_PIN_9
 #define TRIG_PORT GPIOA
 #define ECHO_PIN GPIO_PIN_8
