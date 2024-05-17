@@ -92,8 +92,7 @@ int main(void)
 
   // CUSTOM CODES
 
-  main_timer_and_uart_init_function();
-  enable_and_start_timers();
+  init_and_start_distance_measuring(100, 9600);
 
   /* USER CODE END 2 */
 

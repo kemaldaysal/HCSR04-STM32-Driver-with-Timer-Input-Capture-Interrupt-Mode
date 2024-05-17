@@ -7,11 +7,13 @@
 
 #include <timer_and_hcsr04_combined_driver.h>
 
+uint16_t hcsr04_measurement_period_in_ms = 500; // default 500ms
+
 TIM_HandleTypeDef htim1;
 
 uint8_t last_rising_edge_captured = 0;
 uint8_t timer_trig_mode = 0;
-uint8_t first_basic_timer_interrupt_bypassed = 0;
+uint8_t first_unwanted_interrupt_bypassed = 0;
 
 double difference = 0;
 double distance = 0;
@@ -59,10 +61,10 @@ void TIM7_IRQHandler(void) {
 
 	TIM7->SR &= ~(TIM_SR_UIF); // reset the interrupt flag for basic timer
 
-	if (first_basic_timer_interrupt_bypassed == 0){ // Pass the first count because it generates an unwanted interrupt.
-		first_basic_timer_interrupt_bypassed = 1;
+	if (first_unwanted_interrupt_bypassed == 0){ // Pass the first count because it generates an unwanted interrupt.
+		first_unwanted_interrupt_bypassed = 1;
 
-	} else if (first_basic_timer_interrupt_bypassed == 1) {
+	} else if (first_unwanted_interrupt_bypassed == 1) {
 
 		if (timer_trig_mode == 0) {
 
@@ -70,8 +72,9 @@ void TIM7_IRQHandler(void) {
 			timer_trig_mode = 1;
 
 			HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_SET);
-			basic_timer_set_delay_time_in_us(100); // send soundwaves for 100 us
-			basic_timer_reset();
+			basic_timer_reinit_with_new_settings(MICROSECONDS, 100);
+//			basic_timer_set_delay_time_in_us(100); // send soundwaves for 100 us
+//			basic_timer_reset();
 
 		}
 
@@ -79,10 +82,10 @@ void TIM7_IRQHandler(void) {
 
 			// unpower the trig pin after sending signal for 10 ms.
 			HAL_GPIO_WritePin(TRIG_PORT, TRIG_PIN, GPIO_PIN_RESET);
-
+			basic_timer_reinit_with_new_settings(MILLISECONDS, hcsr04_measurement_period_in_ms);
 			// START ECHO MODE
-			basic_timer_set_delay_time_in_us(MEASURING_FREQ_IN_US); // wait for the echo and repeat the reading processes in each x us.
-			basic_timer_reset();
+//			basic_timer_set_delay_time_in_us(MEASURING_FREQ_IN_US); // wait for the echo and repeat the reading processes in each x us.
+//			basic_timer_reset();
 			timer_trig_mode = 0;
 			send_sensor_data_to_uart(); // send the data while waiting for the next loop
 
@@ -153,66 +156,112 @@ static void MX_TIM1_Init(void)
 
 }
 
+void basic_timer_reinit_with_new_settings(timer_range_ms_or_us_e timer_range, uint16_t stoptime)
+{
 
-void basic_timer_init(uint16_t prescaler, uint16_t arr) {
+	TIM7->CR1 &= ~(1<<0); // disable the timer temporarily
 
-	// We'll use this timer to generate a 1000 ms delay.
+	if (timer_range == MILLISECONDS) {
 
-	__HAL_RCC_TIM7_CLK_ENABLE();
+		TIM7->PSC = 48000-1;
 
-	//TIM6->CR1 |= (1<<2); // commented on 291223 1623, test it later
+	} else if (timer_range == MICROSECONDS) {
 
-	// The clock source is 48 MHz.
-	// 48.000.000 / 48000 = 1000 Hz -> 1 / 1kHz = 1 ms timer period
+		TIM7->PSC = 48-1;
+	}
 
-	TIM7->PSC = prescaler-1; // default: 48000-1
+	TIM7->ARR = (stoptime-1);
 
-	// We had a 1ms timer period, let it count 200 times, which is equal to 200 ms.
-	// and generate a event caused by arr's limit.
+	TIM7->EGR |= (1<<0); // restart the timer with new settings
+	TIM7->SR &= ~(1 << 0);
 
-	TIM7->ARR = arr-1; // default: 200-1
-
-	// Update interrupt (UIE) enable, in DIER register, bit 0 must be 1
-
-	//TIM7->DIER |= (1<<0);
-	TIM7->DIER |= TIM_DIER_UIE;
-
-	NVIC_EnableIRQ(TIM7_IRQn);
-	NVIC_SetPriority(TIM7_IRQn, 2);
+	TIM7->CR1 |= (1<<0); // enable the timer again
+	first_unwanted_interrupt_bypassed = 0;
 
 }
 
-void basic_timer_set_delay_time_in_us(uint16_t time) {
-	TIM7->ARR = time-1;
+void set_measurement_period_in_ms(uint16_t period_in_ms)
+{
+
+//	if (period_in_ms <= 1150)  {
+//		dht11_measurement_period_in_ms = 1150; // prevent user from setting the period below 1150 ms.
+//	} else {
+		uint16_t hcsr04_measurement_period_in_ms = period_in_ms;
+//	}
+
 }
 
-void basic_timer_reset(void) {
+void basic_timer_reset_counter(void) {
 	TIM7->CNT = 0;
 
 }
 
+uint16_t basic_timer_get_counter_value(void)
+{
+	return (TIM7->CNT);
+}
 
-void basic_timer_enable(void) {
-	// In order to enable the timer, bit 0 of CR1 register must be 1
+void basic_timer_init(timer_range_ms_or_us_e timer_range, uint16_t arr)
+{
 
-	TIM7->CR1 |= (1<<0);
+	// We'll use this timer to generate a 1000 ms delay.
+
+//	__HAL_RCC_TIM7_CLK_ENABLE();
+	SET_BIT(RCC->APB1ENR, RCC_APB1ENR_TIM7EN);
+	//TIM6->CR1 |= (1<<2); // commented on 291223 1623, test it later
+
+	// Example: The clock source is 48 MHz.
+	// 48.000.000 / 48000 = 1000 Hz -> 1 / 1kHz = 1 ms timer period
+
+	if (timer_range == MICROSECONDS)
+	{
+		TIM7->PSC = 48-1;
+
+	} else if (timer_range == MILLISECONDS)
+	{
+		TIM7->PSC = 48000-1;
+
+	}
+
+	// Example: We had a 1ms timer period, let it count 200 times, which is equal to 200 ms.
+	// and generate a event caused by arr's limit.
+
+	TIM7->ARR = (arr)-1;
+
+	basic_timer_enable_interrupt();
 
 }
 
-void basic_timer_disable(void) {
+void basic_timer_enable(void)
+{
+	TIM7->CR1 |= (1<<0);
+	first_unwanted_interrupt_bypassed = 0;
+}
 
-	// In order to disable the timer, bit 0 of CR1 register must be 0
+void basic_timer_disable(void)
+{
 
 	TIM7->CR1 &= ~(1<<0);
+//	first_unwanted_interrupt_bypassed = 0;
+
 }
 
+void basic_timer_enable_interrupt(void)
+{
+	TIM7->DIER |= (1<<0);
+	NVIC_EnableIRQ(TIM7_IRQn);
+	NVIC_SetPriority(TIM7_IRQn, 1);
+}
+
+void basic_timer_disable_interrupt(void)
+{
+	TIM7->DIER &= ~(1<<0);
+	NVIC_DisableIRQ(TIM7_IRQn);
+}
 
 void send_sensor_data_to_uart(void) {
 	char uart_buffer[30];
 	sprintf((char*) uart_buffer, "Distance: %.2f cm\r\n", distance);
 	UART_send_byte_array(uart_buffer, strlen((char*) uart_buffer));
 }
-
-
-
 

@@ -7,16 +7,13 @@
 
 #include "application_layer_driver.h"
 
-void main_timer_and_uart_init_function(void)
+void init_and_start_distance_measuring(uint16_t measurement_period_in_ms, uint32_t uart_baudrate)
 {
-	basic_timer_init(TIMER_PRESCALER, TIMER_ARR);
+	basic_timer_init(TIMER_PRESCALER_STARTUP, TIMER_PERIOD_STARTUP);
+	set_measurement_period_in_ms(measurement_period_in_ms);
 	IC_timer_init();
-	UART_init(UART_BAUDRATE);
-}
+	UART_init(uart_baudrate);
 
-
-void enable_and_start_timers(void)
-{
 	basic_timer_enable();
 	IC_timer_start();
 }

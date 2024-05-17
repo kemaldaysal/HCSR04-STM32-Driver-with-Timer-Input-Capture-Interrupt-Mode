@@ -25,14 +25,25 @@
 
 #define SPEED_OF_SOUND_BASIC_IN_CM_US (0.0344487f) // in 22.7 *C
 
+typedef enum{
+	MICROSECONDS,
+	MILLISECONDS,
+}timer_range_ms_or_us_e;
+
 void IC_timer_init(void);
 void IC_timer_start(void);
 
-void basic_timer_init(uint16_t prescaler, uint16_t arr);
-void basic_timer_set_delay_time_in_us(uint16_t time);
-void basic_timer_reset(void);
+void set_measurement_period_in_ms(uint16_t period_in_ms);
+
+void basic_timer_basic_while_delay(uint16_t delay);
+void basic_timer_reinit_with_new_settings(timer_range_ms_or_us_e timer_range, uint16_t stoptime);
+void basic_timer_reset_counter(void);
+void basic_timer_init(timer_range_ms_or_us_e timer_range, uint16_t arr);
 void basic_timer_enable(void);
 void basic_timer_disable(void);
+void basic_timer_enable_interrupt(void);
+void basic_timer_disable_interrupt(void);
+uint16_t timer_get_counter_value(void);
 
 void send_sensor_data_to_uart(void);
 
