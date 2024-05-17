@@ -186,7 +186,7 @@ void set_measurement_period_in_ms(uint16_t period_in_ms)
 //	if (period_in_ms <= 1150)  {
 //		dht11_measurement_period_in_ms = 1150; // prevent user from setting the period below 1150 ms.
 //	} else {
-		uint16_t hcsr04_measurement_period_in_ms = period_in_ms;
+		hcsr04_measurement_period_in_ms = period_in_ms;
 //	}
 
 }
