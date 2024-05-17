@@ -92,7 +92,7 @@ int main(void)
 
   // CUSTOM CODES
 
-  init_and_start_distance_measuring(100, 9600);
+  init_and_start_distance_measuring(500, 1200, 9600);
 
   /* USER CODE END 2 */
 

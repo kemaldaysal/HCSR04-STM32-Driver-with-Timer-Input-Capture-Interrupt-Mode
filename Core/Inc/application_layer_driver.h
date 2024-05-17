@@ -10,11 +10,12 @@
 
 #include <timer_and_hcsr04_combined_driver.h>
 #include "uart_driver.h"
+#include "dht11_driver.h"
 
 #define TIMER_PRESCALER_STARTUP MICROSECONDS // default
 #define TIMER_PERIOD_STARTUP ((uint16_t) 65536) // default max
 #define UART_BAUDRATE_DEFAULT ((uint32_t) 115200) // default
 
-void init_and_start_distance_measuring(uint16_t measurement_period_in_ms, uint32_t uart_baudrate);
+void init_and_start_distance_measuring(uint16_t distance_measurement_period_in_ms, uint16_t temp_measurement_period_in_ms, uint32_t uart_baudrate);
 
 #endif /* INC_APPLICATION_LAYER_DRIVER_H_ */

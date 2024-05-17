@@ -13,7 +13,9 @@ TIM_HandleTypeDef htim1;
 
 uint8_t last_rising_edge_captured = 0;
 uint8_t timer_trig_mode = 0;
-uint8_t first_unwanted_interrupt_bypassed = 0;
+static uint8_t first_unwanted_interrupt_bypassed = 0;
+
+extern volatile float temperature;
 
 double difference = 0;
 double distance = 0;
@@ -41,9 +43,14 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			// Based on this difference, the distance will be calculated by using the formula below, which is provided in the sensor's datasheet.
 			// NOTE: This formula must/will be improved because the speed of sound gets changed by ambient temperature and humidity.
 			// A temperature sensor will be involved and this code will be updated later. Therefore, the formula below can be used to get more accurate results.
-			//			distance = (difference/2)*((331*(sqrt(1+(temp/273))))*0.0001);
 
-			distance = (difference/2)*SPEED_OF_SOUND_BASIC_IN_CM_US; // sound of speed in 22.7*C: 345 m/s -> 0.035 cm/us
+			if (temperature != 0) {
+				distance = (difference/2)*((331*(sqrt(1+(temperature/273))))*0.0001);
+			} else {
+				distance = (difference/2)*((331*(sqrt(1+(22.7/273))))*0.0001);
+			}
+
+//			distance = (difference/2)*SPEED_OF_SOUND_BASIC_IN_CM_US; // sound of speed in 22.7*C: 345 m/s -> 0.035 cm/us
 
 			last_rising_edge_captured = 0; // Set it to the default state to capture the rising edge on the next cycle
 
@@ -259,9 +266,15 @@ void basic_timer_disable_interrupt(void)
 	NVIC_DisableIRQ(TIM7_IRQn);
 }
 
-void send_sensor_data_to_uart(void) {
-	char uart_buffer[30];
-	sprintf((char*) uart_buffer, "Distance: %.2f cm\r\n", distance);
+void send_sensor_data_to_uart(void)
+{
+	char uart_buffer[80];
+	if (temperature != 0) {
+		sprintf((char*) uart_buffer, "Distance: %.2f cm, temperature: %.2f *C\r\n", distance, temperature);
+	} else {
+		sprintf((char*) uart_buffer, "Distance: %.2f cm, temperature read error!! (default 22.7 *C is used)\r\n", distance);
+	}
+
 	UART_send_byte_array(uart_buffer, strlen((char*) uart_buffer));
 }
 
