@@ -18,6 +18,10 @@
 * Recreated the timer library to be more efficient and accurate.
 * Added a dynamic prescaler and arr register changer function to update the measurement periods and input capture interrupt's frequency while timer is in use.
 
+18.05.2024
+-
+* Implemented custom made DHT11 library, which is working almost as a non-blocking code thanks to the interrupts, and started to use temperature data when measuring the distance, in order to get more accurate results. 
+
 **Known Bugs and Limitations**
 -
 
@@ -26,5 +30,5 @@
 **To Do List**
 -
 
-1) To improve the accuracy of measurements, a temperature sensor integration will be made. Because sound of speed changes in different temperatures with this formula: 331*(sqrt(1+(temp/273)), the temperature coefficient when finding the [distance = (difference/2)*((331*(sqrt(1+(temp/273))))*0.0001);] distance should be varied on temperature and humidity.
-2) ~~The measuring frequency's max value is 65536 us (65,536 ms = 2^16 us) for now. Hence, measuring in every 65 ms is the slowest option. It's because of the 2^16 bit limit in prescaler and arr registers. Adding a HAL_Delay isn't recommended because of the risk of slowing the interrupt function and giving incorrect measurements. A dynamic changing prescaler and arr approach will be added later.~~
+1) ~~To improve the accuracy of measurements, a temperature sensor integration will be made. Because sound of speed changes in different temperatures with this formula: 331*(sqrt(1+(temp/273)), the temperature coefficient when finding the [distance = (difference/2)*((331*(sqrt(1+(temp/273))))*0.0001);] distance should be varied on temperature and humidity.~~ Done on 18.05.2024.
+2) ~~The measuring frequency's max value is 65536 us (65,536 ms = 2^16 us) for now. Hence, measuring in every 65 ms is the slowest option. It's because of the 2^16 bit limit in prescaler and arr registers. Adding a HAL_Delay isn't recommended because of the risk of slowing the interrupt function and giving incorrect measurements. A dynamic changing prescaler and arr approach will be added later.~~ Done on 17.05.2024.
